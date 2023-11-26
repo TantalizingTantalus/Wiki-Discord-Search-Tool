@@ -26,8 +26,8 @@ using System.Text;
 public static class ChannelID
 {
     // I have 2 channels the bot posts to
-    public const ulong WordOfTheDay = 123;     
-    public const ulong General = 1234;
+    public const ulong WordOfTheDay = 1177756368954986637;     
+    public const ulong General = 1177585011604594721;
 }
 
 //ID's used in channel pings
@@ -73,17 +73,20 @@ class Program
     }
 
     // Clean the leftover HTML from the scraped "extracts" 
-    static string CleanHTML(string Input)
+    static string CleanHTML(string Input, bool ClearTopLine = true)
     {
         Input = Replace(Input, "i");
         Input = Replace(Input, "b");
         Input = Replace(Input, "p");
         Input = Replace(Input, "em");
         Input = Replace(Input, "a");
-        int IndexOf = Input.IndexOf("\n");
-        if(IndexOf != -1)
+        if(ClearTopLine)
         {
-            Input = Input.Substring(IndexOf + 1);
+            int IndexOf = Input.IndexOf("\n");
+            if (IndexOf != -1)
+            {
+                Input = Input.Substring(IndexOf + 1);
+            }
         }
         return Input;
     }
@@ -94,7 +97,7 @@ class Program
         try
         {
             // Create bot token
-            const string BotToken = @"YOUR BOT TOKEN HERE";         //Replace with your bot token
+            const string BotToken = @"MTE3NzU4MTgxMDM2OTE3MTUxNg.GxxQIl.XGAInLdaMcWlD4kKnPILLQuAZrPlf0UXP7ATRc";         //Replace with your bot token
 
             // Set up Discord client
             DiscordSocketClient Client = new DiscordSocketClient();
@@ -181,7 +184,7 @@ class Program
                             {
                                 // Format word of the day message
                                 string Message = $"**{WOTDMatch.Groups[1].Value}:** {WOTDMatch.Groups[2].Value}" + $"\n**Definition:** *{DefinitionMatch.Groups[1].Value}*";
-                                Message = CleanHTML(Message);
+                                Message = CleanHTML(Message, false);
 
                                 // Send word of the day message
                                 if(!await SendDiscordMessage(Message, ChannelID.WordOfTheDay))

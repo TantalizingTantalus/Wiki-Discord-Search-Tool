@@ -167,14 +167,14 @@ class Program
                     {
                         // Prepare search pattern with scraped result
                         string WordOfTheDayPattern = @"<title>(Word of the Day):\s(\w+)";
-                        string html = await client.GetStringAsync(ScraperURL);
-                        Match WOTDMatch = Regex.Match(html, WordOfTheDayPattern);
+                        string Html = await client.GetStringAsync(ScraperURL);
+                        Match WOTDMatch = Regex.Match(Html, WordOfTheDayPattern);
 
                         // Search for word of the day 
                         if(WOTDMatch.Success)
                         { 
                             string WOTDDefinitionPattern = $"<p><em>{WOTDMatch.Groups[2].Value}<\\/em>\\s.*?(.*?)<\\/p>";
-                            Match DefinitionMatch = Regex.Match(html, WOTDDefinitionPattern);
+                            Match DefinitionMatch = Regex.Match(Html, WOTDDefinitionPattern);
 
                             // Search for word of the day definition
                             if(DefinitionMatch.Success)
@@ -201,10 +201,10 @@ class Program
                 }
                 else
                 {
-                    using (HttpClient client = new HttpClient())
+                    using (HttpClient Client = new HttpClient())
                     {
                         // Scrape the webpage and ensure Success
-                        HttpResponseMessage Response = await client.GetAsync(ScraperURL);
+                        HttpResponseMessage Response = await Client.GetAsync(ScraperURL);
                         Response.EnsureSuccessStatusCode();
 
                         // Parse scraped result

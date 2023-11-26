@@ -123,8 +123,7 @@ class Program
     // Add '+' in place of ' ' in the keyword to perform search
     static async Task<string> CleanSpaces(string KeywordName)
     {
-        KeywordName = KeywordName.Replace(" ", "+");
-        return KeywordName;
+        return KeywordName.Replace(" ", "+");
     }
 
     // Add ' ' in place of '+' in the keyword to display in Discord

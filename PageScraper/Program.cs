@@ -102,11 +102,11 @@ class Program
             await Client.StartAsync();
 
             // Assign ChannelID to send message to
-            ulong id = ChannelID;
-            var chnl = await Client.GetChannelAsync(id) as IMessageChannel;
+            ulong Id = ChannelID;
+            var Channel = await Client.GetChannelAsync(Id) as IMessageChannel;
 
             // Send Message to channel
-            await chnl!.SendMessageAsync($"{PingID.Everyone}\n\n\n" + Message + $"\n\nThanks for following (**{chnl.Name}**) updates!");
+            await Channel!.SendMessageAsync($"{PingID.Everyone}\n\n\n" + Message + $"\n\nThanks for following (**{Channel.Name}**) updates!");
 
             // Return success
             return true;

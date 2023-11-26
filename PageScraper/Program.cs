@@ -26,8 +26,8 @@ using System.Text;
 public static class ChannelID
 {
     // I have 2 channels the bot posts to
-    public const ulong WordOfTheDay = 1177756368954986637;     
-    public const ulong General = 1177585011604594721;
+    public const ulong WordOfTheDay = 123;     
+    public const ulong General = 1234;
 }
 
 //ID's used in channel pings
@@ -97,7 +97,7 @@ class Program
         try
         {
             // Create bot token
-            const string BotToken = @"MTE3NzU4MTgxMDM2OTE3MTUxNg.GXDDOg.aDso43aJ9YPD4scQmbousnnqG-r9hp8kCO8aUs";         //Replace with your bot token
+            const string BotToken = @"YOUR TOKEN HERE";         //Replace with your bot token
 
             // Set up Discord client
             DiscordSocketClient Client = new DiscordSocketClient();

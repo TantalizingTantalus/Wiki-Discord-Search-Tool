@@ -73,19 +73,19 @@ class Program
     }
 
     // Clean the leftover HTML from the scraped "extracts" 
-    static string CleanHTML(string text)
+    static string CleanHTML(string Input)
     {
-        text = Replace(text, "i");
-        text = Replace(text, "b");
-        text = Replace(text, "p");
-        text = Replace(text, "em");
-        text = Replace(text, "a");
-        int IndexOf = text.IndexOf("\n");
+        Input = Replace(Input, "i");
+        Input = Replace(Input, "b");
+        Input = Replace(Input, "p");
+        Input = Replace(Input, "em");
+        Input = Replace(Input, "a");
+        int IndexOf = Input.IndexOf("\n");
         if(IndexOf != -1)
         {
-            text = text.Substring(IndexOf + 1);
+            Input = Input.Substring(IndexOf + 1);
         }
-        return text;
+        return Input;
     }
 
     // Send string Message to a channel your bot is authorized in 

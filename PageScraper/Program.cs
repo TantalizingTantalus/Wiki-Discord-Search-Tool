@@ -221,8 +221,8 @@ class Program
                         Message = $"**{KeywordName}**:\n" + Message;
                         Message = CleanHTML(Message);
 
-                        // Check if message is less than 2000 characters (Discord's limit)
-                        if (Message.Length < 1999)
+                        // Check if message is less than 1800 characters (Discord's limit is 2000)
+                        if (Message.Length < 1800)
                         {
                             if(!await SendDiscordMessage(Message))
                             {

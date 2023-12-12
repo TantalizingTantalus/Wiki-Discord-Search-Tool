@@ -23,6 +23,7 @@ using Discord.Interactions;
 using System.Runtime.CompilerServices;
 using Discord.Commands;
 using System.Threading.Tasks;
+using System.Globalization;
 
 
 // Channel ID's to route IMessage
@@ -32,8 +33,8 @@ public static class ChannelID
     // I have 2 channels the bot posts to
 
     //Development server
-    public const ulong WordOfTheDay = 1177756368954986637;
-    public const ulong General = 1177585011604594721;
+    //public const ulong WordOfTheDay = 1177756368954986637;
+    //public const ulong General = 1177585011604594721;
 
 
 
@@ -46,11 +47,12 @@ public static class ChannelID
     Gulag:
     Word of the Day - 1113258574873894932
     General - 1113258881494298706
+    Casual Comrades - 1113259032862543953
      */
 
     //Gulag Server
-    //public const ulong WordOfTheDay = 1113258574873894932;
-    //public const ulong General = 1113258881494298706;
+    public const ulong WordOfTheDay = 1113258574873894932;
+    public const ulong General = 1113259032862543953;
 }
 
 //ID's used in channel pings
@@ -65,6 +67,7 @@ public static class PingID
 class Program
 {
     private DiscordSocketClient _client;
+    
 
     static void Main(string[] args) => new Program().RunBotAsync().GetAwaiter().GetResult();
 
@@ -143,6 +146,52 @@ class Program
         return Input;
     }
 
+    static async Task<string> GetRandomGifUrl(string apiKey)
+    {
+        using (HttpClient httpClient = new HttpClient())
+        {
+            string giphyApiUrl = $"https://api.giphy.com/v1/gifs/random?api_key={apiKey}";
+
+            HttpResponseMessage response = await httpClient.GetAsync(giphyApiUrl);
+
+            if (response.IsSuccessStatusCode)
+            {
+                string jsonResponse = await response.Content.ReadAsStringAsync();
+
+                // Use Newtonsoft.Json for parsing the JSON response
+                var giphyResponse = JsonConvert.DeserializeObject<GiphyResponse>(jsonResponse);
+
+                // Check if the image URL is available in the response
+                if (giphyResponse?.Data?.Image_Url != null)
+                {
+                    return giphyResponse.Data.Image_Url;
+                }
+                else
+                {
+                    Console.WriteLine("Error: Image URL not found in the Giphy API response.");
+                    return null;
+                }
+            }
+            else
+            {
+                Console.WriteLine($"Error: {response.StatusCode} - {response.ReasonPhrase}");
+                return null;
+            }
+        }
+    }
+
+    // Define a class structure to match the Giphy API response
+    public class GiphyResponse
+    {
+        public GiphyData Data { get; set; }
+    }
+
+    public class GiphyData
+    {
+        [JsonProperty("url")]
+        public string Image_Url { get; set; }
+    }
+
     // Send string Message to a channel your bot is authorized in 
     static async Task<bool> SendDiscordMessage(string Message, ISocketMessageChannel targetChannel)
     {
@@ -154,9 +203,13 @@ class Program
             const string BotToken = @"MTE3NzU4MTgxMDM2OTE3MTUxNg.GYaWNw.XNlKkAiJ3esF43OnUMi8ASypwFtkrm9CG0c5wE";         //Replace with your bot token
             // Assign ChannelID to send message to
             ulong Id = TargetChannel.Id;
-            
+            string GiphyAPIKey = "OeQ7yIiBqJthTrh0hwen8E0Csd78dkWy";
 
-            string BufferGIF = @"https://tenor.com/sYrX.gif";
+            string BufferGIF = await GetRandomGifUrl(GiphyAPIKey);
+            Console.WriteLine($"Random GIF URL: {BufferGIF}");
+             
+                //@"https://media.giphy.com/media/tBb19f62NciUiu5q0fu/giphy.gif";
+            //https://media.giphy.com/media/tBb19f62NciUiu5q0fu/giphy.gif
 
             // Send Message to channel
             await TargetChannel.SendMessageAsync($"{PingID.None}\n\n\n{Message}\n\nThanks for following (**{TargetChannel.Name}**) updates!");
@@ -188,6 +241,15 @@ class Program
         return Task.CompletedTask;
     }
 
+    static string ToTitleCase(string input)
+    {
+        // Create a TextInfo object for the current culture
+        TextInfo textInfo = CultureInfo.CurrentCulture.TextInfo;
+
+        // Convert the input string to title case
+        return textInfo.ToTitleCase(input);
+    }
+
     private async Task HandleCommand(SocketMessage arg)
     {
         SocketUserMessage message = arg as SocketUserMessage;
@@ -205,15 +267,33 @@ class Program
 
             const string SearchCommandPattern = $"^({CommandName})\\s+(\\S+)$";
             const string WOTDCommandPattern = @"\/(wotd)";
+            const string PoopPattern = @"poop";
+            RegexOptions options = RegexOptions.IgnoreCase;
 
             Match SearchMatch = Regex.Match(CachedMsg, SearchCommandPattern);
             Match WordMatch = Regex.Match(CachedMsg, WOTDCommandPattern);
+            Match PoopMatch = Regex.Match(CachedMsg, PoopPattern, options);
 
+            if(PoopMatch.Success)
+            {
+                try
+                {
+                    if(! (await SendDiscordMessage($"Hehe... your last message contained {PoopMatch.Value}", message.Channel)))
+                    {
+                        Console.WriteLine("Failed to send poop message...");
+                    }
+                     
+                }catch (Exception ex)
+                {
+                    Console.WriteLine("Caught poop exception: " + ex.ToString());
+                }
+            }
 
             if(SearchMatch.Success)
             {
                 string SearchKey = SearchMatch.Groups[2].Value;
-                SearchKey = SearchKey.Replace("-", string.Empty);
+                SearchKey = SearchKey.Replace("-", " ");
+                SearchKey = ToTitleCase(SearchKey);
                 // process search command
 
                 try

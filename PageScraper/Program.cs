@@ -19,6 +19,10 @@ using Discord.WebSocket;
 using Discord;
 using System.Text.RegularExpressions;
 using System.Text;
+using Discord.Interactions;
+using System.Runtime.CompilerServices;
+using Discord.Commands;
+using System.Threading.Tasks;
 
 
 // Channel ID's to route IMessage
@@ -26,8 +30,27 @@ using System.Text;
 public static class ChannelID
 {
     // I have 2 channels the bot posts to
-    public const ulong WordOfTheDay = 123;     
-    public const ulong General = 1234;
+
+    //Development server
+    public const ulong WordOfTheDay = 1177756368954986637;
+    public const ulong General = 1177585011604594721;
+
+
+
+    /* INTERNAL USE ONLY, CLEAR BEFORE COMMIT + PUSH 
+     
+    DevelopmentTesting: 
+    Word of the Day - 1177756368954986637
+    General - 1177585011604594721
+
+    Gulag:
+    Word of the Day - 1113258574873894932
+    General - 1113258881494298706
+     */
+
+    //Gulag Server
+    //public const ulong WordOfTheDay = 1113258574873894932;
+    //public const ulong General = 1113258881494298706;
 }
 
 //ID's used in channel pings
@@ -36,14 +59,43 @@ public static class PingID
     // Replace with your Discord UserID's
     public const ulong CustomUser = 123;     
     public const string Everyone = "@everyone";
+    public static string None = string.Empty;
 }
 
 class Program
 {
-    // Used to agregate Replace() calls from CleanHTML()
+    private DiscordSocketClient _client;
+
+    static void Main(string[] args) => new Program().RunBotAsync().GetAwaiter().GetResult();
+
+    public async Task RunBotAsync()
+    {
+        _client = new DiscordSocketClient(new DiscordSocketConfig
+        {
+            LogLevel = LogSeverity.Info, // Set the log level (you can adjust this)
+            MessageCacheSize = 100, // Set the number of messages the client should cache
+
+            // Add other configurations as needed
+            // For example:
+            // GatewayIntents = GatewayIntents.Guilds | GatewayIntents.GuildMessages,
+            GatewayIntents = GatewayIntents.AllUnprivileged | GatewayIntents.MessageContent,
+        }) ;
+        await _client.LoginAsync(TokenType.Bot, "MTE3NzU4MTgxMDM2OTE3MTUxNg.GYaWNw.XNlKkAiJ3esF43OnUMi8ASypwFtkrm9CG0c5wE");
+        await _client.StartAsync();
+
+        _client.Log += Log;
+
+        _client.MessageReceived += HandleCommand;
+        
+
+
+
+        await Task.Delay(-1);
+    }
+
     static string Replace(string FullText, string TextToReplace)
     {
-        switch(TextToReplace)
+        switch (TextToReplace)
         {
             case "em": // Clean and format <em> tags
                 FullText = FullText.Replace($"<{TextToReplace}>", "**");
@@ -58,7 +110,7 @@ class Program
                 Match LinkMatch = Regex.Match(FullText, LinkPattern);
                 while (LinkMatch.Success)
                 {
-                    string temp = LinkMatch.Groups[1].Value;
+                    // Full-text format is: [link-url](link-text)
                     FullText = FullText.Replace($"{LinkMatch.Groups[0].Value}", $"[{LinkMatch.Groups[2].Value}]({LinkMatch.Groups[1].Value})");
                     LinkMatch = Regex.Match(FullText, LinkPattern);
                 }
@@ -80,7 +132,7 @@ class Program
         Input = Replace(Input, "p");
         Input = Replace(Input, "em");
         Input = Replace(Input, "a");
-        if(ClearTopLine)
+        if (ClearTopLine)
         {
             int IndexOf = Input.IndexOf("\n");
             if (IndexOf != -1)
@@ -92,29 +144,28 @@ class Program
     }
 
     // Send string Message to a channel your bot is authorized in 
-    static async Task<bool> SendDiscordMessage(string Message, ulong ChannelID = ChannelID.General)
+    static async Task<bool> SendDiscordMessage(string Message, ISocketMessageChannel targetChannel)
     {
         try
         {
+            SocketTextChannel TargetChannel = (SocketTextChannel)targetChannel;
+            Console.WriteLine($"Attempting to write to channel {TargetChannel.Id}...");
             // Create bot token
-            const string BotToken = @"YOUR TOKEN HERE";         //Replace with your bot token
-
-            // Set up Discord client
-            DiscordSocketClient Client = new DiscordSocketClient();
-            await Client.LoginAsync(TokenType.Bot, BotToken);
-            await Client.StartAsync();
-
+            const string BotToken = @"MTE3NzU4MTgxMDM2OTE3MTUxNg.GYaWNw.XNlKkAiJ3esF43OnUMi8ASypwFtkrm9CG0c5wE";         //Replace with your bot token
             // Assign ChannelID to send message to
-            ulong Id = ChannelID;
-            var Channel = await Client.GetChannelAsync(Id) as IMessageChannel;
+            ulong Id = TargetChannel.Id;
+            
+
+            string BufferGIF = @"https://tenor.com/sYrX.gif";
 
             // Send Message to channel
-            await Channel!.SendMessageAsync($"{PingID.Everyone}\n\n\n" + Message + $"\n\nThanks for following (**{Channel.Name}**) updates!");
+            await TargetChannel.SendMessageAsync($"{PingID.None}\n\n\n{Message}\n\nThanks for following (**{TargetChannel.Name}**) updates!");
+            await TargetChannel.SendMessageAsync(BufferGIF);
 
             // Return success
             return true;
         }
-        catch 
+        catch
         {
 
             // Return failure
@@ -129,84 +180,48 @@ class Program
         return KeywordName.Replace(" ", "+");
     }
 
-    // Add ' ' in place of '+' in the keyword to display in Discord
-    static async Task<string> RemovePlusSign(string KeywordName)
+
+
+    private Task Log(LogMessage arg)
     {
-        return KeywordName.Replace("+", " "); 
+        Console.WriteLine(arg);
+        return Task.CompletedTask;
     }
 
-    // Get and format input for search
-    static async Task<string> GetInput()
+    private async Task HandleCommand(SocketMessage arg)
     {
-        string? Input = Console.ReadLine();
-        Input = await CleanSpaces(Input);
-        return Input;
-    }
+        SocketUserMessage message = arg as SocketUserMessage;
 
-    // Main logic
-    static async Task Main()
-    {
-        // Store the input data
-        string? KeywordName = String.Empty;
-
-        // Keyword to enter to display the Merriam Webster's Word of the Day
-        string WOTDClause = "2";
-
-        // Main loop entry
-        try
+        if (message == null || message.Author.IsBot)
         {
-            // Display menu and await input
-            Console.WriteLine($"Enter any single word to begin, or enter '{WOTDClause}' at any time to view the Merriam Webster's Word of the Day.\n");
-            KeywordName = await GetInput();
-            string ScraperURL = $"https://en.wikipedia.org/w/api.php?action=query&format=json&prop=extracts&titles={KeywordName}&utf8=1&exintro=1&explaintext=true";
+            return;
+        }
 
-            // Break if 'quit' or 'quit program' is entered
-            while (!KeywordName.ToLower().Equals("quit program") || !KeywordName.ToLower().Equals("quit"))
+        if (!string.IsNullOrEmpty(message.Content))
+        {
+            // Cache the message text
+            string CachedMsg = message.Content;
+            const string CommandName = @"/search";
+
+            const string SearchCommandPattern = $"^({CommandName})\\s+(\\S+)$";
+            const string WOTDCommandPattern = @"\/(wotd)";
+
+            Match SearchMatch = Regex.Match(CachedMsg, SearchCommandPattern);
+            Match WordMatch = Regex.Match(CachedMsg, WOTDCommandPattern);
+
+
+            if(SearchMatch.Success)
             {
-                if(KeywordName.Equals(WOTDClause))
+                string SearchKey = SearchMatch.Groups[2].Value;
+                SearchKey = SearchKey.Replace("-", string.Empty);
+                // process search command
+
+                try
                 {
-                    ScraperURL = "https://www.merriam-webster.com/word-of-the-day";
-                    using (HttpClient client = new HttpClient())
-                    {
-                        // Prepare search pattern with scraped result
-                        string WordOfTheDayPattern = @"<title>(Word of the Day):\s(\w+)";
-                        string Html = await client.GetStringAsync(ScraperURL);
-                        Match WOTDMatch = Regex.Match(Html, WordOfTheDayPattern);
-
-                        // Search for word of the day 
-                        if(WOTDMatch.Success)
-                        { 
-                            string WOTDDefinitionPattern = $"<p><em>{WOTDMatch.Groups[2].Value}<\\/em>\\s.*?(.*?)<\\/p>";
-                            Match DefinitionMatch = Regex.Match(Html, WOTDDefinitionPattern);
-
-                            // Search for word of the day definition
-                            if(DefinitionMatch.Success)
-                            {
-                                // Format word of the day message
-                                string Message = $"**{WOTDMatch.Groups[1].Value}:** {WOTDMatch.Groups[2].Value}" + $"\n**Definition:** *{DefinitionMatch.Groups[1].Value}*";
-                                Message = CleanHTML(Message, false);
-
-                                // Send word of the day message
-                                if(!await SendDiscordMessage(Message, ChannelID.WordOfTheDay))
-                                {
-                                    Console.WriteLine("Failed to post the word of the day...");
-                                    throw new Exception("Failed to post.");
-                                } 
-                                Console.WriteLine($"Successfully posted word of the day to discord channel.");
-                            }
-                        }
-
-                        // Await next input
-                        Console.WriteLine("\n\nMake another search by typing in a keyword, otherwise enter 'quit' or 'quit program'.");
-                        KeywordName = await GetInput();
-                        ScraperURL = $"https://en.wikipedia.org/w/api.php?action=query&format=json&prop=extracts&titles={KeywordName}&utf8=1&exintro=1&explaintext=true";
-                    }
-                }
-                else
-                {
-                    using (HttpClient Client = new HttpClient())
+                    using (HttpClient Client = new HttpClient { Timeout = TimeSpan.FromSeconds(10) })
                     {
                         // Scrape the webpage and ensure Success
+                        string ScraperURL = $"https://en.wikipedia.org/w/api.php?action=query&format=json&prop=extracts&titles={SearchKey}&utf8=1&exintro=1&explaintext=true";
                         HttpResponseMessage Response = await Client.GetAsync(ScraperURL);
                         Response.EnsureSuccessStatusCode();
 
@@ -214,23 +229,19 @@ class Program
                         string JsonResult = await Response.Content.ReadAsStringAsync();
                         JObject ParsedResult = JObject.Parse(JsonResult);
 
-                        // Format Keyword for Message
-                        KeywordName = await RemovePlusSign(KeywordName);
-
                         // Create Message to send
-                        string Message = $"Failed to grab {KeywordName}.";
+                        string Message = $"Failed to grab {SearchKey}.";
                         Message = ParsedResult.ToString();
                         Message = ParsedResult["query"]["pages"].First.First["extract"].ToString();
-                        Message = $"**{KeywordName}**:\n" + Message;
+                        Message = $"**{SearchKey}**:\n" + Message;
                         Message = CleanHTML(Message);
 
                         // Check if message is less than 1800 characters (Discord's limit is 2000)
-                        if (Message.Length < 1800)
+                        if (Message.Length < 1700)
                         {
-                            if(!await SendDiscordMessage(Message))
+                            if (!(await SendDiscordMessage(Message, message.Channel)))
                             {
                                 Console.WriteLine($"Failed to post message...");
-                                throw new Exception("Failed to post.");
                             }
 
                             Console.WriteLine($"Posted search to Discord Channel.");
@@ -238,9 +249,9 @@ class Program
                         else
                         {
                             // Take first 1800 characters from string to be safe
-                            string ModifiedMessage = new string(Message.Take(1800).ToArray());
+                            string ModifiedMessage = new string(Message.Take(1700).ToArray());
                             Console.WriteLine(ModifiedMessage.Length);
-                            if(!await SendDiscordMessage($"There seems to be quite a bit on **{KeywordName}**, this is all I could pull: \n\n{ModifiedMessage}"))
+                            if (!await SendDiscordMessage($"There seems to be quite a bit on **{SearchKey}**, this is all I could pull: \n\n{ModifiedMessage}", message.Channel))
                             {
                                 Console.WriteLine("Failed to send message...");
                                 throw new Exception("Failed to post.");
@@ -249,23 +260,62 @@ class Program
 
                         // Await next input
                         Console.WriteLine("\n\nMake another search by typing in a keyword, otherwise enter 'quit' or 'quit program'.");
-                        KeywordName = await GetInput();
-                        ScraperURL = $"https://en.wikipedia.org/w/api.php?action=query&format=json&prop=extracts&titles={KeywordName}&utf8=1&exintro=1&explaintext=true";
+                    }
+                }
+                catch (Exception ex)
+                {
+                    if (!await SendDiscordMessage($"Failed to parse your search, try again!\n\nException caught: \n{ex.Message}", message.Channel))
+                    {
+                        Console.WriteLine("Failed to send message...");
+                        throw new Exception("Failed to post.");
                     }
                 }
             }
-        }
-        catch (Exception Ex)
-        {
-            Console.WriteLine($"Ran into problems, response message: {Ex.Message}");
-            if(await SendDiscordMessage($"Failed to execute command, something went wrong try another search."))
+
+            if(WordMatch.Success)
             {
-                Console.WriteLine("Error posted to channel.");
+                using (HttpClient client = new HttpClient())
+                {
+                    string ScraperURL = "https://www.merriam-webster.com/word-of-the-day";
+
+                    SocketGuild guild = _client.GetGuild(ChannelID.WordOfTheDay); // Replace GUILD_ID with the ID of your guild
+
+                    SocketChannel som = _client.GetChannel(ChannelID.WordOfTheDay);
+
+                    // Get the channel using the ID
+                    SocketTextChannel channel = (SocketTextChannel)som;
+
+                    // Prepare search pattern with scraped result
+                    string WordOfTheDayPattern = @"<title>(Word of the Day):\s(\w+)";
+                    string Html = await client.GetStringAsync(ScraperURL);
+                    Match WOTDMatch = Regex.Match(Html, WordOfTheDayPattern);
+
+                    // Search for word of the day 
+                    if (WOTDMatch.Success)
+                    {
+                        string WOTDDefinitionPattern = $"<p><em>{WOTDMatch.Groups[2].Value}<\\/em>\\s.*?(.*?)<\\/p>";
+                        Match DefinitionMatch = Regex.Match(Html, WOTDDefinitionPattern);
+
+                        // Search for word of the day definition
+                        if (DefinitionMatch.Success)
+                        {
+                            // Format word of the day message
+                            string Message = $"**{WOTDMatch.Groups[1].Value}:** {WOTDMatch.Groups[2].Value}" + $"\n**Definition:** *{DefinitionMatch.Groups[1].Value}*";
+                            Message = CleanHTML(Message, false);
+
+                            // Send word of the day message
+                            if (!await SendDiscordMessage(Message, message.Channel))
+                            {
+                                Console.WriteLine("Failed to post the word of the day...");
+                                throw new Exception("Failed to post.");
+                            }
+                            Console.WriteLine($"Successfully posted word of the day to discord channel.");
+                        }
+                    }
+                    // Await next input
+                    Console.WriteLine("\n\nMake another search by typing in a keyword, otherwise enter 'quit' or 'quit program'.");
+                }
             }
-            return;
         }
     }
 }
-
-
-

@@ -75,9 +75,8 @@ namespace functiondiscordtest
     {
         private DiscordSocketClient _client;
 
-        [FunctionName("Function1")]
-        static void Main(string[] args) => new Function1().RunBotAsync().GetAwaiter().GetResult();
 
+        [FunctionName("Function1")]
         public async Task RunBotAsync()
         {
             _client = new DiscordSocketClient(new DiscordSocketConfig

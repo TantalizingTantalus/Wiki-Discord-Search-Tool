@@ -3,10 +3,16 @@
 // a webpage and use the Discord bot to send the               |
 // scraped information to a custom Discord channel.            |
 //                                                             |
-// For fun, entering '2' while running the program will        |
-// grab and display the Merriam Webster's Word of the Day      |
-// for the current day. This will be displayed in whatever     |
-// channel is specified.                                       |
+// Currently, you enter your Discord channel ID and bot token  |
+// and compile (Alternatively I set my bot up on Azure         |
+// Functions to run whenever I ping the server).               |
+//                                                             |
+// Use the commands "/search {search term}" to scrape          |
+// Wikipedia using the OpenSearch REST API for the relevant    |
+// term.                                                       |
+//                                                             |
+// Use the command "/wotd" to send the Merriam Webster's Word  |
+// of the Day to a specified Discord server                    |
 //-------------------------------------------------------------+
 
 using System;
